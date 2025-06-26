@@ -30,7 +30,7 @@ def get_next_filename(prefix='Datos', ext='.txt', limit=100):
 
 
 def open_serial(port, baudrate=9600, timeout=1):
-    return serial.Serial(port, baudrate=baudrate, timeout=timeout)#sadasdasd
+    return serial.Serial(port, baudrate=baudrate, timeout=timeout)#hola
 
 
 def main():
