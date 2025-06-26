@@ -1,3 +1,4 @@
+import os
 import time
 import serial
 import serial.tools.list_ports
@@ -23,8 +24,19 @@ def open_serial(port, baudrate=500000, timeout=1):
     return serial.Serial(port, baudrate=baudrate, timeout=timeout)
 
 
+def get_next_filename(prefix="Datos", ext=".txt", limit=100):
+    """Return the next available filename DatosXX.txt (00-99)."""
+    for i in range(limit):
+        name = f"{prefix}{i:02d}{ext}"
+        if not os.path.exists(name):
+            return name
+    return None
+
+
 def main():
     ser = None
+    buffer = []
+
     while True:
         if ser is None or not ser.is_open:
             port = find_arduino_port()
@@ -47,8 +59,19 @@ def main():
                 continue
             decoded = line.decode("utf-8", errors="replace").rstrip()
             print(decoded)
+            buffer.append(decoded)
         except (serial.SerialException, OSError):
-            print("Connection lost. Reconnecting...")
+            print("Connection lost. Saving data and reconnecting...")
+            if buffer:
+                filename = get_next_filename()
+                if filename is None:
+                    print("Reached Datos99.txt. Exiting.")
+                    return
+                print(f"Saving data to {filename}")
+                with open(filename, "w") as f:
+                    for entry in buffer:
+                        f.write(entry + "\n")
+                buffer.clear()
             if ser:
                 try:
                     ser.close()
@@ -58,6 +81,13 @@ def main():
             time.sleep(1)
         except KeyboardInterrupt:
             print("Stopping by user request.")
+            if buffer:
+                filename = get_next_filename()
+                if filename is not None:
+                    print(f"Saving data to {filename}")
+                    with open(filename, "w") as f:
+                        for entry in buffer:
+                            f.write(entry + "\n")
             break
 
 
